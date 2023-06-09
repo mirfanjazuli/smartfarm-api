@@ -1,7 +1,15 @@
 const User = require('../models/userModel')
+const asyncErrorHandler = require('../utils/asyncErrorHandler')
+const jwt = require('jsonwebtoken')
 
 const getUsers = async (req, res) => {
-    res.status(200).json({message: 'get user profile'})
+    try {
+        const users = await User.find(req.body)
+        res.status(200).json(users)
+    } catch (error) {
+        console.log(error.message)
+        res.status(500).json({message: error.message})
+    }
 }
 
 const getUser = async (req, res) => {
@@ -15,15 +23,36 @@ const getUser = async (req, res) => {
     }
 }
 
-const addUser = async (req, res) => {
+// authentication and authorization
+const signUp = asyncErrorHandler(async (req, res, next) => {
     try {
-        const user = await User.create(req.body)
-        res.status(200).json(user)
+        const newUser = await User.create(req.body)
+        
+        const token = jwt.sign({id: newUser._id}, process.env.SECRET_STR, {
+            expiresIn: process.env.LOGIN_EXP
+        })
+
+        res.status(201).json({
+            status: 'success',
+            token,
+            data: {
+                newUser
+            }
+        })
     } catch (error) {
         console.log(error.message)
         res.status(500).json({message: error.message})
     }
-}
+})
+
+const signIn = asyncErrorHandler(async (req, res, next) => {
+    const email = req.body.email
+    const password = req.body.password
+
+    // const { email, password } = req.body
+
+    // if (!email || !password)
+})
 
 const updateUser = async (req, res) => {
     try {
@@ -59,7 +88,7 @@ const deleteUser = async (req, res) => {
 module.exports = { 
     getUsers, 
     getUser, 
-    addUser, 
+    signUp, 
     updateUser, 
     deleteUser 
 }

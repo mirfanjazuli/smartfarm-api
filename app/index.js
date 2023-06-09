@@ -34,8 +34,8 @@ const userRoute = require('./routes/userRoute')
 const articleRoute = require('./routes/articleRoute')
 
 // routers
-app.use('api/v1/users', userRoute)
-app.use('api/v1/articles', articleRoute)
+app.use('/api/v1/users', userRoute)
+app.use('/api/v1/articles', articleRoute)
 
 // app.post('/signup', async(req, res) => {
 //   try {
