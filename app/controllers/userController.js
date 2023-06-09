@@ -1,6 +1,12 @@
+const jwt = require('jsonwebtoken')
 const User = require('../models/userModel')
 const asyncErrorHandler = require('../utils/asyncErrorHandler')
-const jwt = require('jsonwebtoken')
+
+const signToken = id => {
+    return jwt.sign({ id }, process.env.SECRET_STR, {
+        expiresIn: process.env.LOGIN_EXP 
+    })
+}
 
 const getUsers = async (req, res) => {
     try {
@@ -28,9 +34,7 @@ const signUp = asyncErrorHandler(async (req, res, next) => {
     try {
         const newUser = await User.create(req.body)
         
-        const token = jwt.sign({id: newUser._id}, process.env.SECRET_STR, {
-            expiresIn: process.env.LOGIN_EXP
-        })
+        const token = signToken(newUser._id)
 
         res.status(201).json({
             status: 'success',
@@ -46,12 +50,36 @@ const signUp = asyncErrorHandler(async (req, res, next) => {
 })
 
 const signIn = asyncErrorHandler(async (req, res, next) => {
-    const email = req.body.email
-    const password = req.body.password
+    try { 
+        const email = req.body.email
+        const password = req.body.password
+    
+        if (!email || !password) {
+            res.status(400).json({
+                message: 'please provide email and password!'
+            })
+            return next()
+        }
 
-    // const { email, password } = req.body
+        const user = await User.findOne({ email })
 
-    // if (!email || !password)
+        if (!user || !(await user.comparePassword(password, user.password))) {
+            res.status(400).json({
+                message: 'incorrect email or password!'
+            })
+            return next()   
+        }
+
+        const token = signToken(user._id)
+    
+        res.status(200).json({
+            status: 'success',
+            token
+        })
+    } catch (error) {
+        console.log(error.message)
+        res.status(500).json({message: error.message}) 
+    }
 })
 
 const updateUser = async (req, res) => {
@@ -89,6 +117,7 @@ module.exports = {
     getUsers, 
     getUser, 
     signUp, 
+    signIn,
     updateUser, 
     deleteUser 
 }
