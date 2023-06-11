@@ -1,4 +1,6 @@
 const mongoose = require('mongoose')
+const path = require('path')
+require('dotenv').config({ path: path.resolve(__dirname, '../../.env') })
 
 // uri = 'mongodb+srv://root:1234@smartfarm.rupxzav.mongodb.net/?retryWrites=true&w=majority' 
 
