@@ -54,18 +54,32 @@ const signIn = asyncErrorHandler(async (req, res, next) => {
         const email = req.body.email
         const password = req.body.password
     
-        if (!email || !password) {
+        if (!email) {
             res.status(400).json({
-                message: 'please provide email and password!'
+                message: 'please provide email!'
+            })
+            return next()
+        }
+
+        if (!password) {
+            res.status(400).json({
+                message: 'please provide password!'
             })
             return next()
         }
 
         const user = await User.findOne({ email })
 
-        if (!user || !(await user.comparePassword(password, user.password))) {
+        if (!user) {
             res.status(400).json({
-                message: 'incorrect email or password!'
+                message: 'email not found!'
+            })
+            return next()   
+        }
+
+        if (!(await user.comparePassword(password, user.password))) {
+            res.status(400).json({
+                message: 'incorrect password!'
             })
             return next()   
         }
