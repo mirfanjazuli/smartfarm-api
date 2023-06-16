@@ -25,7 +25,7 @@ const getUsers = async (req, res, next) => {
             const userId = await User.findOne({_id: new mongoose.Types.ObjectId(verify)})
             if(!userId) {
                 res.status(401).json({
-                    message: 'user didnt found in database!'
+                    message: 'token incorrect so we cant found account on our database!'
                 })
                 return next()
             }
@@ -40,14 +40,35 @@ const getUsers = async (req, res, next) => {
     }
 }
 
-const getUser = async (req, res) => {
+const getUser = async (req, res, next) => {
+    const { headers } = req
+    const token = headers.authorization
+    if(!token) {
+        res.status(401).json({
+            message: 'please login to get user by id!'
+        })
+        return next()
+    }
+    const tokenSplit = token.split(' ')[1]
     try {
-        const { id } = req.params
-        const user = await User.findById(id, req.body)
-        res.status(200).json(user)
-    } catch (error) {   
-        console.log(error.message)
-        res.status(500).json({message: error.message})
+        const verify = jwt.decode(tokenSplit)
+        if(verify) {
+            const userId = await User.findOne({_id: new mongoose.Types.ObjectId(verify)})
+            if(!userId) {
+                res.status(401).json({
+                    message: 'token incorrect so we cant found account on our database!'
+                })
+                return next()
+            }
+            const { id } = req.params
+            const user = await User.findById(id, req.body)
+            res.status(200).json(user)
+        }
+    } catch (error) {
+        res.status(401).json({
+            message: 'incorrect or expired token!'
+        })
+        return next()
     }
 }
 
@@ -119,33 +140,75 @@ const signIn = asyncErrorHandler(async (req, res, next) => {
 })
 
 const updateUser = async (req, res) => {
+    const { headers } = req
+    const token = headers.authorization
+    if(!token) {
+        res.status(401).json({
+            message: 'please login to get all users!'
+        })
+        return next()
+    }
+    const tokenSplit = token.split(' ')[1]
     try {
-        const { id } = req.params
-        const user = await User.findByIdAndUpdate(id, req.body)
-        if (!user) {
-            return res.status(404).json({message: 'cannot find this user'})
+        const verify = jwt.decode(tokenSplit)
+        if(verify) {
+            const userId = await User.findOne({_id: new mongoose.Types.ObjectId(verify)})
+            if(!userId) {
+                res.status(401).json({
+                    message: 'token incorrect so we cant found account on our database!'
+                })
+                return next()
+            }
+            const { id } = req.params
+            const user = await User.findByIdAndUpdate(id, req.body)
+            if (!user) {
+                return res.status(404).json({message: 'cannot find this user'})
+            }
+            
+            const update = await User.findById(id)
+            res.status(200).json(update)
         }
-        
-        const update = await User.findById(id)
-        res.status(200).json(update)
     } catch (error) {
-        console.log(error.message)
-        res.status(500).json({message: error.message})
+        res.status(401).json({
+            message: 'incorrect or expired token!'
+        })
+        return next()
     }
 }
 
 const deleteUser = async (req, res) => {
+    const { headers } = req
+    const token = headers.authorization
+    if(!token) {
+        res.status(401).json({
+            message: 'please login to get all users!'
+        })
+        return next()
+    }
+    const tokenSplit = token.split(' ')[1]
     try {
-        const { id } = req.params
-        const user = await User.findByIdAndDelete(id)
-        if (!user) {
-            return res.status(404).json({message: 'cannot find this user'})
+        const verify = jwt.decode(tokenSplit)
+        if(verify) {
+            const userId = await User.findOne({_id: new mongoose.Types.ObjectId(verify)})
+            if(!userId) {
+                res.status(401).json({
+                    message: 'token incorrect so we cant found account on our database!'
+                })
+                return next()
+            }
+            const { id } = req.params
+            const user = await User.findByIdAndDelete(id)
+            if (!user) {
+                return res.status(404).json({message: 'cannot find this user'})
+            }
+            
+            res.status(200).json({message: 'data was deleted successfully'})
         }
-        
-        res.status(200).json({message: 'data was deleted successfully'})
     } catch (error) {
-        console.log(error.message)
-        res.status(500).json({message: error.message}) 
+        res.status(401).json({
+            message: 'incorrect or expired token!'
+        })
+        return next()
     }
 }
 
