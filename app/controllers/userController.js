@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken')
 const User = require('../models/userModel')
 const asyncErrorHandler = require('../utils/asyncErrorHandler')
+const mongoose = require('mongoose')
 
 const signToken = id => {
     return jwt.sign({ id }, process.env.SECRET_STR, {
@@ -8,13 +9,34 @@ const signToken = id => {
     })
 }
 
-const getUsers = async (req, res) => {
+const getUsers = async (req, res, next) => {
+    const { headers } = req
+    const token = headers.authorization
+    if(!token) {
+        res.status(401).json({
+            message: 'please login to get all users!'
+        })
+        return next()
+    }
+    const tokenSplit = token.split(' ')[1]
     try {
-        const users = await User.find(req.body)
-        res.status(200).json(users)
+        const verify = jwt.decode(tokenSplit)
+        if(verify) {
+            const userId = await User.findOne({_id: new mongoose.Types.ObjectId(verify)})
+            if(!userId) {
+                res.status(401).json({
+                    message: 'user didnt found in database!'
+                })
+                return next()
+            }
+            const users = await User.find({})
+            res.status(200).json(users)
+        }
     } catch (error) {
-        console.log(error.message)
-        res.status(500).json({message: error.message})
+        res.status(401).json({
+            message: 'incorrect or expired token!'
+        })
+        return next()
     }
 }
 
@@ -85,7 +107,7 @@ const signIn = asyncErrorHandler(async (req, res, next) => {
         }
 
         const token = signToken(user._id)
-    
+        res.setHeader('Authorization', 'Bearer ' + token)
         res.status(200).json({
             status: 'success',
             token
